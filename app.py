@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, abort
 from random import randint
 
 
@@ -50,19 +50,22 @@ def about():
 def get_quote():
     args = request.args
     list_query = list()
-    if len(args) > 1:
-        for quot in quotes:
-            if quot['rating'] == args['rating'] and quot['author'] == args['author']:
-                list_query.append(quot)
-    elif 'rating' in args.keys():
-        for quot in quotes:
-            if quot['rating'] == args['rating']:
-                list_query.append(quot)
-    else:
-        for quot in quotes:
-            if quot['author'] == args['author']:
-                list_query.append(quot)
-    return list_query
+    for quote in quotes:
+        if all(args.get(key, type=type(quote[key])) == quote[key] for key in args):
+            list_query.append(quote)
+    # if len(args) > 1:
+    #     for quot in quotes:
+    #         if quot['rating'] == args['rating'] and quot['author'] == args['author']:
+    #             list_query.append(quot)
+    # elif 'rating' in args.keys():
+    #     for quot in quotes:
+    #         if quot['rating'] == args['rating']:
+    #             list_query.append(quot)
+    # else:
+    #     for quot in quotes:
+    #         if quot['author'] == args['author']:
+    #             list_query.append(quot)
+    return jsonify(list_query)
 
 @app.route("/quotes", methods=['POST'])
 def create_quote():
@@ -74,21 +77,21 @@ def create_quote():
    if new_quote['rating'] >= 5:
        new_quote['rating'] = 1
    quotes.append(new_quote)
-   return new_quote, 201
+   return jsonify(new_quote), 201
 
 @app.route("/quotes/<int:id>", methods=['PUT'])
 def get_quotes(id):
     if 1 <= id <= len(quotes):
         new_data = request.json
         quotes[id-1].update(new_data)
-        return quotes[id-1], 200
+        return jsonify(quotes[id-1]), 200
     return f"Quote with id={id} not found", 404
 
 @app.route("/quotes/<int:id>", methods=['DELETE'])
 def delete(id):
    if 1 <= id <= len(quotes):
         return f"Quote with id {id} is deleted.", 200
-   return f"Quote with id={id} not found", 404
+   abort(404, f"Quote with id={id} not found")
 
 
 @app.route("/quotes/count")
@@ -97,7 +100,7 @@ def get_quotes_count():
 
 @app.route("/quotes/random")
 def get_random_quotes():
-    return quotes[randint(0, len(quotes)-1)], 200
+    return jsonify(quotes[randint(0, len(quotes)-1)]), 200
 
 if __name__ == "__main__":
    app.run(debug=True)
