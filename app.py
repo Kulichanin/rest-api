@@ -2,25 +2,30 @@ import sqlite3
 
 from flask import Flask, request, jsonify, abort, g
 from werkzeug.exceptions import HTTPException
+from flask_sqlalchemy import SQLAlchemy
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent
-DATABASE = BASE_DIR / "rest.db"  
+BASE_DIR = Path(__file__).parent 
+DATABASE = BASE_DIR / 'main.db'
 
 app = Flask(__name__)
+
 app.config['JSON_AS_ASCII'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DATABASE}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
+db = SQLAlchemy(app)
 
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+class QuoteModel(db.Model):
+   id = db.Column(db.Integer, primary_key=True)
+   author = db.Column(db.String(32), unique=False)
+   text = db.Column(db.String(255), unique=False)
+   rating = db.Column(db.Integer, unique=False, nullable=False, default=1)
+
+   def __init__(self, author, text, rating):
+       self.author = author
+       self.text  = text
+       self.rating = rating
 
 @app.errorhandler(HTTPException)
 def hadle_exception(e):
