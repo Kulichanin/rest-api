@@ -53,8 +53,8 @@ def create_quote():
     new_quote = request.json
     conn = get_db()
     cursor = conn.cursor()
-    create_quote = f"INSERT INTO quotes (author, text, rating) VALUES ('{new_quote['author']}', '{new_quote['text']}', '{new_quote['rating']}')"
-    cursor.execute(create_quote)
+    create_quote = "INSERT INTO quotes (author, text, rating) VALUES (?, ?, ?)"
+    cursor.execute(create_quote, (new_quote['author'], new_quote['text'], new_quote['rating']))
     conn.commit()
     new_quote_id = cursor.lastrowid
     new_quote['id'] = new_quote_id
@@ -78,15 +78,14 @@ def update_quote(id):
     new_quote = request.json
     conn = get_db()
     cursor = conn.cursor()
-    update_quote = f"UPDATE quotes SET author='{new_quote['author']}', text='{new_quote['text']}', rating='{new_quote['rating']}' WHERE id={id}"
-    cursor.execute(update_quote)
+    new_quote_data = (new_quote['author'], new_quote['text'], new_quote['rating'])
+    update_quote = "UPDATE quotes SET author=?, text=?, rating=? WHERE id=?"
+    cursor.execute(update_quote, (*new_quote_data, id))
     conn.commit()
-    select_quote_by_id = f"SELECT * FROM quotes WHERE id={id}"
-    cursor.execute(select_quote_by_id)
-    quotes_db = cursor.fetchone()
-    keys = ["id", "author", "text", "rating"]
-    quote = dict(zip(keys, quotes_db))
-    return jsonify(quote)
+    if cursor.rowcount > 0:
+        new_quote['id'] = id
+        return jsonify(new_quote), 200
+    abort(404, f"Quote with id={id} not found")
 
 
 if __name__ == "__main__":
