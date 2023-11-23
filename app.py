@@ -34,7 +34,6 @@ def get_all_quotes():
     quotes_db = cursor.fetchall()
     keys = ["id", "author", "text", "rating"]
     quotes = [dict(zip(keys, quote_db)) for quote_db in quotes_db]
-    print(quotes)
     return jsonify(quotes)
 
 @app.route("/quotes/<int:id>", methods=['GET'])
