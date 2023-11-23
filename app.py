@@ -27,71 +27,57 @@ class QuoteModel(db.Model):
        self.text  = text
        self.rating = rating
 
+   def to_dict(self):
+        return {
+            "id": self.id,
+            "author": self.author,
+            "text": self.text
+    }
+
 @app.errorhandler(HTTPException)
 def hadle_exception(e):
     return jsonify({'massage': e.description}), e.code
 
 @app.route("/quotes", methods=['GET'])
 def get_all_quotes():
-    cursor = get_db().cursor()
-    select_quote_by_id = f"SELECT * FROM"
-    cursor.execute(select_quote_by_id)
-    quotes_db = cursor.fetchone()
-    keys = ["id", "author", "text", "rating"]
-    quotes = [dict(zip(keys, quote_db)) for quote_db in quotes_db]
-    return jsonify(quotes)
+    quotes = QuoteModel.query.all()
+    quotes_as_dict = [quote.to_dict() for quote in quotes]
+    return jsonify(quotes_as_dict), 200
 
 @app.route("/quotes/<int:id>", methods=['GET'])
 def get_quotes_by_id(id):
-    cursor = get_db().cursor()
-    select_quote_by_id = f"SELECT * FROM quotes WHERE id={id}"
-    cursor.execute(select_quote_by_id)
-    quotes_db = cursor.fetchone()
-    keys = ["id", "author", "text", "rating"]
-    if quotes_db is None:
+    quote = QuoteModel.query.get(id)
+    if quote is None:
         abort(404, f"Quote with id={id} not found")
-    quote = dict(zip(keys, quotes_db))
-    return jsonify(quote)
+    return jsonify(quote.to_dict()), 200
 
-@app.route("/quotes", methods=['POST'])
+@app.post("/quotes")
 def create_quote():
-    new_quote = request.json
-    conn = get_db()
-    cursor = conn.cursor()
-    create_quote = f"INSERT INTO quotes (author, text, rating) VALUES ('{new_quote['author']}', '{new_quote['text']}', '{new_quote['rating']}')"
-    cursor.execute(create_quote)
-    conn.commit()
-    new_quote_id = cursor.lastrowid
-    new_quote['id'] = new_quote_id
-    return jsonify(new_quote), 201
+    quote_data = request.json
+    quote = QuoteModel(quote_data["author"], quote_data["text"], quote_data["rating"])
+    db.session.add(quote)
+    db.session.commit()
+    return jsonify(quote.to_dict()), 201
 
-@app.route("/quotes/<int:id>", methods=['DELETE'])
-def delete(id):
-    conn = get_db()
-    cursor = conn.cursor()
-    if 1 <= id <= cursor.fetchall().count:
-        del_quote = f"DELETE FROM quotes WHERE id={id}"
-        cursor.execute(del_quote)
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify(del_quote), 201
-    abort(404, f"Quote with id={id} not found")
-
-@app.route("/quotes/<int:id>", methods=['PUT'])
+@app.put("/quotes/<int:id>")
 def update_quote(id):
-    new_quote = request.json
-    conn = get_db()
-    cursor = conn.cursor()
-    update_quote = f"UPDATE quotes SET author='{new_quote['author']}', text='{new_quote['text']}', rating='{new_quote['rating']}' WHERE id={id}"
-    cursor.execute(update_quote)
-    conn.commit()
-    select_quote_by_id = f"SELECT * FROM quotes WHERE id={id}"
-    cursor.execute(select_quote_by_id)
-    quotes_db = cursor.fetchone()
-    keys = ["id", "author", "text", "rating"]
-    quote = dict(zip(keys, quotes_db))
-    return jsonify(quote)
+    quote_data = request.json
+    quote = QuoteModel.query.get(id)
+    if quote is None:
+        abort(404, f"Quote with id={id} not found")
+    for key, value in quote_data.items():
+        setattr(quote, key, value)
+    db.session.commit()
+    return jsonify(quote.to_dict()), 200
+
+@app.delete("/quotes/<int:id>")
+def delete_quote(id):
+    quote = QuoteModel.query.get(id)
+    if quote is None:
+        abort(404, f"Quote with id={id} not found")
+    db.session.delete(quote)
+    db.session.commit()
+    return jsonify({'message': f"Quote with id={quote.to_dict()} has deleted"}), 200
 
 
 if __name__ == "__main__":
