@@ -29,11 +29,12 @@ def hadle_exception(e):
 @app.route("/quotes", methods=['GET'])
 def get_all_quotes():
     cursor = get_db().cursor()
-    select_quote_by_id = f"SELECT * FROM"
-    cursor.execute(select_quote_by_id)
-    quotes_db = cursor.fetchone()
+    select_quotes = "SELECT * FROM quotes"
+    cursor.execute(select_quotes)
+    quotes_db = cursor.fetchall()
     keys = ["id", "author", "text", "rating"]
     quotes = [dict(zip(keys, quote_db)) for quote_db in quotes_db]
+    print(quotes)
     return jsonify(quotes)
 
 @app.route("/quotes/<int:id>", methods=['GET'])
