@@ -3,10 +3,11 @@ import sqlite3
 from flask import Flask, request, jsonify, abort, g
 from werkzeug.exceptions import HTTPException
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent 
-DATABASE = BASE_DIR / 'main.db'
+DATABASE = BASE_DIR / 'quotes.db'
 
 app = Flask(__name__)
 
