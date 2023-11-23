@@ -77,7 +77,7 @@ def delete_quote(id):
         abort(404, f"Quote with id={id} not found")
     db.session.delete(quote)
     db.session.commit()
-    return jsonify({'message': f"Quote with id={quote.to_dict()} has deleted"}), 200
+    return jsonify({'message': f"Quote with id={id} has deleted"}), 200
 
 
 if __name__ == "__main__":
